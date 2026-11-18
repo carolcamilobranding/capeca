@@ -18,10 +18,41 @@ const items=[{"code": "M01", "title": "O café atravessa gerações", "category"
 const escapeHTML=s=>s.replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const downloadIcon='<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" aria-hidden="true"><path d="M12 3v12m-5-5 5 5 5-5M4 15v6h16v-6"/></svg>';
 const downloadURL=id=>'https://drive.google.com/uc?export=download&id='+encodeURIComponent(id);
-document.querySelector('#videos').innerHTML=items.map(v=>{const poster=draft?v.localCover:'https://drive.google.com/thumbnail?id='+v.coverId+'&sz=w720';return `<article class="card" id="${v.code}" data-category="${v.category}"><div class="card-top"><span class="eyebrow">${v.code} · ${v.category}</span><h2>${escapeHTML(v.title)}</h2></div><div class="preview"><img class="poster" src="${poster}" alt="Capa de ${escapeHTML(v.title)}" loading="lazy" width="1080" height="1920"><button class="play" data-code="${v.code}" aria-label="Assistir: ${escapeHTML(v.title)}"><svg viewBox="0 0 72 72" fill="none" aria-hidden="true"><circle cx="36" cy="36" r="34" fill="#154e2add" stroke="currentColor" stroke-width="2"/><path d="m29 23 21 13-21 13Z" fill="currentColor"/></svg></button></div><div class="body"><div class="downloads"><a class="download" href="${draft?v.localVideo:downloadURL(v.videoId)}" target="_blank" rel="noopener">${downloadIcon}Baixar vídeo em alta</a><a class="download secondary" href="${draft?v.localCover:downloadURL(v.coverId)}" target="_blank" rel="noopener">${downloadIcon}Baixar capa em alta</a></div><div class="caption"><div class="caption-head"><span>Legenda para Instagram</span><button type="button" class="copy" data-copy="${v.code}" aria-label="Copiar legenda de ${escapeHTML(v.title)}">Copiar</button></div><p>${escapeHTML(v.caption)}</p></div></div></article>`}).join('');
+items.unshift({
+  code: 'M06',
+  slug: 'homenagem-oswaldo',
+  title: 'Homenagem ao Senhor Oswaldo Alves de Araújo',
+  category: 'Montagens',
+  caption: 'O Senhor Oswaldo Alves de Araújo fez história na cafeicultura de Campos Altos. Décadas depois, seu neto Paulo Vilela chega à final do 10º Concurso Qualidade do Café. As fotografias de família e os recortes de jornal contam como o café aproxima essas duas gerações. ☕\n\n#CAPECA #CamposAltos #Cafeicultura #CafeDeQualidade',
+  stream: 'media/homenagem-oswaldo/homenagem-oswaldo.mp4',
+  poster: 'media/homenagem-oswaldo/previa.webp',
+  cover: 'media/homenagem-oswaldo/capa.png',
+  original: 'https://github.com/carolcamilobranding/capeca/releases/download/homenagem-oswaldo-v37/Homenagem-Senhor-Oswaldo-Mobile-v37.mp4'
+});
+document.querySelector('#videos').innerHTML=items.map(v=>{const poster=v.poster || (draft?v.localCover:'https://drive.google.com/thumbnail?id='+v.coverId+'&sz=w720');return `<article class="card" id="${v.slug || v.code}" data-category="${v.category}"><div class="card-top"><span class="eyebrow">${v.code} · ${v.category}</span><h2>${escapeHTML(v.title)}</h2></div><div class="preview"><img class="poster" src="${poster}" alt="Capa de ${escapeHTML(v.title)}" loading="lazy" width="1080" height="1920"><button class="play" data-code="${v.code}" aria-label="Assistir: ${escapeHTML(v.title)}"><svg viewBox="0 0 72 72" fill="none" aria-hidden="true"><circle cx="36" cy="36" r="34" fill="#154e2add" stroke="currentColor" stroke-width="2"/><path d="m29 23 21 13-21 13Z" fill="currentColor"/></svg></button></div><div class="body"><div class="downloads"><a class="download" href="${v.original || (draft?v.localVideo:downloadURL(v.videoId))}" target="_blank" rel="noopener">${downloadIcon}Baixar vídeo em alta</a><a class="download secondary" href="${v.cover || (draft?v.localCover:downloadURL(v.coverId))}" ${v.cover ? 'download="Capa-Homenagem-Senhor-Oswaldo.png"' : ''} target="_blank" rel="noopener">${downloadIcon}Baixar capa em alta</a></div><div class="caption"><div class="caption-head"><span>Legenda para Instagram</span><button type="button" class="copy" data-copy="${v.code}" aria-label="Copiar legenda de ${escapeHTML(v.title)}">Copiar</button></div><p>${escapeHTML(v.caption)}</p></div></div></article>`}).join('');
 let active=null,toastTimer;
 document.querySelectorAll('[data-filter]').forEach(b=>b.addEventListener('click',()=>{document.querySelectorAll('[data-filter]').forEach(x=>x.setAttribute('aria-pressed',x===b?'true':'false'));document.querySelectorAll('.card').forEach(c=>c.hidden=b.dataset.filter!=='Todos'&&c.dataset.category!==b.dataset.filter);if(active?.closest('.card').hidden){active.remove();active=null;}}));
-document.querySelectorAll('.play').forEach(b=>b.addEventListener('click',()=>{if(active)active.remove();const v=items.find(x=>x.code===b.dataset.code),player=document.createElement(draft?'video':'iframe');if(draft){player.src=v.localVideo;player.controls=true;player.autoplay=true;player.playsInline=true;}else{player.src='https://drive.google.com/file/d/'+v.videoId+'/preview';player.title=v.title;player.allow='autoplay; fullscreen';player.allowFullscreen=true;player.referrerPolicy='strict-origin-when-cross-origin';}b.parentNode.append(player);active=player;}));
+document.querySelectorAll('.play').forEach(button => button.addEventListener('click', () => {
+  if (active) active.remove();
+  const item = items.find(entry => entry.code === button.dataset.code);
+  const video = item.stream || (draft && item.localVideo);
+  const player = document.createElement(video ? 'video' : 'iframe');
+  player.title = item.title;
+  if (video) {
+    player.src = video;
+    player.controls = true;
+    player.autoplay = true;
+    player.playsInline = true;
+    if (item.poster) player.poster = item.poster;
+  } else {
+    player.src = 'https://drive.google.com/file/d/' + item.videoId + '/preview';
+    player.allow = 'autoplay; fullscreen';
+    player.allowFullscreen = true;
+    player.referrerPolicy = 'strict-origin-when-cross-origin';
+  }
+  button.parentNode.append(player);
+  active = player;
+}));
 document.querySelectorAll('[data-copy]').forEach(b=>b.addEventListener('click',async()=>{const v=items.find(x=>x.code===b.dataset.copy);try{await navigator.clipboard.writeText(v.caption)}catch{const el=document.createElement('textarea');el.value=v.caption;el.style.position='fixed';el.style.opacity='0';document.body.append(el);el.select();const ok=document.execCommand('copy');el.remove();if(!ok){const range=document.createRange();range.selectNodeContents(b.closest('.caption').querySelector('p'));getSelection().removeAllRanges();getSelection().addRange(range);document.querySelector('.toast').textContent='Legenda selecionada para copiar';return;}}b.textContent='Copiado';document.querySelector('.toast').textContent='Legenda copiada';clearTimeout(toastTimer);toastTimer=setTimeout(()=>{document.querySelector('.toast').textContent='';b.textContent='Copiar'},2500);}));
 </script>
 </body></html>
